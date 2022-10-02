@@ -68,6 +68,11 @@
                 ],
                 "LoadBalancerName": "keycloak",
                 "Scheme": "internet-facing",
+                "SecurityGroups": [
+                    {
+                        "Ref": "SecurityGroup"
+                    }
+                ],
                 "Subnets": {
                     "Ref": "Subnets"
                 },
