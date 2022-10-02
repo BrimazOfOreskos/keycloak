@@ -18,9 +18,59 @@
         "Subnets": {
             "Type": "List<AWS::EC2::Subnet::Id>",
             "Description": "List of public subnets from which the load balancer will accept traffic"
+        },
+        "Vpc": {
+            "Type": "AWS::EC2::VPC::Id",
+            "Description": "Id of VPC for deployment"
         }
     },
-    "Resources" : {
+    "Resources": {
+        "ElbSg": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Permits outside access to the Keycloak Elastic Load Balancer",
+                "GroupName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            {
+                                "Ref": "Project"
+                            },
+                            {
+                                "Ref": "Application"
+                            },
+                            "elb"
+                        ]
+                    ]
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "Description": "Allow tcp/80 from all",
+                        "FromPort": 80,
+                        "IpProtocol": "tcp",
+                        "ToPort": 80
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Project",
+                        "Value": {
+                            "Ref": "Project"
+                        }
+                    },
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "Application"
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "Vpc"
+                }
+            }
+        },
         "ApplicationElb": {
             "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
             "Properties": {
@@ -58,7 +108,11 @@
                 ],
                 "LoadBalancerName": "keycloak",
                 "Scheme": "internet-facing",
-                "SecurityGroups": [],
+                "SecurityGroups": [
+                    {
+                        "Ref": "ElbSg"
+                    }
+                ],
                 "Subnets": {
                     "Ref": "Subnets"
                 },
