@@ -1,0 +1,138 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters": {
+        "Application": {
+            "Type": "String",
+            "AllowedValues": [
+                "keycloak"
+            ],
+            "Default": "keycloak"
+        },
+        "Project": {
+            "Type": "String",
+            "AllowedValues": [
+                "oreskos"
+            ],
+            "Default": "oreskos"
+        },
+        "Vpc": {
+            "Type": "AWS::EC2::VPC::Id",
+            "Description": "Id of VPC for deployment"
+        }
+    },
+    "Resources": {
+        "ApplicationServerSg": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Handles ingress for application servers",
+                "GroupName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            {
+                                "Ref": "Project"
+                            },
+                            {
+                                "Ref": "Application"
+                            },
+                            "sg"
+                        ]
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "Project",
+                        "Value": {
+                            "Ref": "Project"
+                        }
+                    },
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "Application"
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "Vpc"
+                }
+            }
+        },
+        "ApplicationServerSgIngressRule": {
+            "Type": "AWS::EC2::SecurityGroupIngress",
+            "Properties": {
+                "Description": "Allow tcp/8080 from ElbSg",
+                "FromPort": 8080,
+                "GroupId": {
+                    "Ref": "ApplicationServerSg"
+                },
+                "IpProtocol": "tcp",
+                "SourceSecurityGroupId": {
+                    "Ref": "ElbSg"
+                },
+                "ToPort": 8080
+            }
+        },
+        "ElbSg": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Handles ingress and egress for the application load balancer",
+                "GroupName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            {
+                                "Ref": "Project"
+                            },
+                            {
+                                "Ref": "Application"
+                            },
+                            "elb-sg"
+                        ]
+                    ]
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "Description": "Allow tcp/80 from all",
+                        "FromPort": 80,
+                        "IpProtocol": "tcp",
+                        "ToPort": 80
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Project",
+                        "Value": {
+                            "Ref": "Project"
+                        }
+                    },
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "Application"
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "Vpc"
+                }
+            }
+        },
+        "ElbSgEgressRule": {
+            "Type": "AWS::EC2::SecurityGroupEgress",
+            "Properties": {
+                "Description": "Allow tcp/8080 to ApplicationServerSg",
+                "DestinationSecurityGroupId": {
+                    "Ref": "ApplicationServerSg"
+                },
+                "FromPort": 8080,
+                "GroupId": {
+                    "Ref": "ElbSg"
+                },
+                "IpProtocol": "tcp",
+                "ToPort": 8080
+            }
+        }
+    }
+}
