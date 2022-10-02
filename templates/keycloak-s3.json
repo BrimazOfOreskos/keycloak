@@ -1,0 +1,150 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Mappings": {
+        "RegionMap": {
+            "us-east-1": {
+                "ElbAccount": "127311923021"
+            }
+        }
+    },
+    "Parameters": {
+        "Application": {
+            "Type": "String",
+            "AllowedValues": [
+                "keycloak"
+            ],
+            "Default": "keycloak"
+        },
+        "Project": {
+            "Type": "String",
+            "AllowedValues": [
+                "oreskos"
+            ],
+            "Default": "oreskos"
+        }
+    },
+    "Resources": {
+        "ApplicationBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "AccessControl": "Private",
+                "BucketEncryption": {
+                    "ServerSideEncryptionConfiguration": [
+                        {
+                            "ServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "AES256"
+                            }
+                        }
+                    ]
+                },
+                "BucketName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            {
+                                "Ref": "Project"
+                            },
+                            {
+                                "Ref": "Application"
+                            }
+                        ]
+                    ]
+                },
+                "OwnershipControls": {
+                    "Rules": [
+                        {
+                            "ObjectOwnership": "BucketOwnerEnforced"
+                        }
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "Project",
+                        "Value": {
+                            "Ref": "Project"
+                        }
+                    },
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "Application"
+                        }
+                    }
+                ]
+            }
+        },
+        "ElbLogBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "Bucket": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            {
+                                "Ref": "Project"
+                            },
+                            {
+                                "Ref": "Application"
+                            }
+                        ]
+                    ]
+                },
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": {
+                                    "Fn::Join": [
+                                        ":",
+                                        [
+                                            "arn:aws:iam:",
+                                            {
+                                                "Fn::FindInMap": [
+                                                    "RegionMap",
+                                                    {
+                                                        "Ref": "AWS::Region"
+                                                    },
+                                                    "ElbAccount"
+                                                ]
+                                            },
+                                            "root"
+                                        ]
+                                    ]
+                                }
+                            },
+                            "Action": "s3:PutObject",
+                            "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "arn:aws:s3:::",
+                                        {
+                                            "Fn::Join": [
+                                                "-",
+                                                [
+                                                    {
+                                                        "Ref": "Project"
+                                                    },
+                                                    {
+                                                        "Ref": "Application"
+                                                    }
+                                                ]
+                                            ]
+                                        },
+                                        "/AWSLogs/",
+                                        {
+                                            "Ref": "AWS::AccountId"
+                                        },
+                                        "/*"
+                                    ]
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

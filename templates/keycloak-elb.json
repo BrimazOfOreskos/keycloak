@@ -1,0 +1,82 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters": {
+        "Application": {
+            "Type": "String",
+            "AllowedValues": [
+                "keycloak"
+            ],
+            "Default": "keycloak"
+        },
+        "Project": {
+            "Type": "String",
+            "AllowedValues": [
+                "oreskos"
+            ],
+            "Default": "oreskos"
+        },
+        "Subnets": {
+            "Type": "List<AWS::EC2::Subnet::Id>",
+            "Description": "List of public subnets from which the load balancer will accept traffic"
+        }
+    },
+    "Resources" : {
+        "ApplicationElb": {
+            "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+            "Properties": {
+                "AccessLoggingPolicy": {
+                    "Enabled": true,
+                    "S3BucketName": {
+                        "Fn::Join": [
+                            "-",
+                            [
+                                {
+                                    "Ref": "Project"
+                                },
+                                {
+                                    "Ref": "Application"
+                                }
+                            ]
+                        ]
+                    }
+                },
+                "HealthCheck": {
+                    "HealthyThreshold": "5",
+                    "Interval": "300",
+                    "Target": "HTTP:8080/health",
+                    "Timeout": "5",
+                    "UnhealthyThreshold": "2"
+                },
+                "Instances": [],
+                "Listeners": [
+                    {
+                        "InstancePort": "8080",
+                        "InstanceProtocol": "HTTP",
+                        "LoadBalancerPort": "80",
+                        "Protocol": "HTTP"
+                    }
+                ],
+                "LoadBalancerName": "keycloak",
+                "Scheme": "internet-facing",
+                "SecurityGroups": [],
+                "Subnets": {
+                    "Ref": "Subnets"
+                },
+                "Tags": [
+                    {
+                        "Key": "Project",
+                        "Value": {
+                            "Ref": "Project"
+                        }
+                    },
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "Application"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}
