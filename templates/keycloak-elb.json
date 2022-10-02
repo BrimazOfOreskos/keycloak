@@ -8,6 +8,10 @@
             ],
             "Default": "keycloak"
         },
+        "ApplicationServers": {
+            "Type": "List<AWS::EC2::Instance::Id>",
+            "Description": "List of EC2 Instances to balance"
+        },
         "Project": {
             "Type": "String",
             "AllowedValues": [
@@ -50,6 +54,9 @@
                     "Target": "HTTP:8080/health",
                     "Timeout": "5",
                     "UnhealthyThreshold": "2"
+                },
+                "Instances": {
+                    "Ref": "ApplicationServers"
                 },
                 "Listeners": [
                     {

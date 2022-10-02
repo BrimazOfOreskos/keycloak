@@ -1,0 +1,144 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters": {
+        "Project": {
+            "Type": "String",
+            "AllowedValues": [
+                "oreskos"
+            ],
+            "Default": "oreskos"
+        },
+        "ApplicationName": {
+            "Type": "String",
+            "AllowedValues": [
+                "keycloak"
+            ],
+            "Default": "keycloak"
+        },
+        "ApplicationInstanceType": {
+            "Type": "String",
+            "AllowedValues": [
+                "m5.large"
+            ],
+            "Default": "m5.large"
+        },
+        "ApplicationKey": {
+            "Type": "AWS::EC2::KeyPair::KeyName",
+            "Description": "EC2 KeyPair to use for connection to Application servers"
+        },
+        "ApplicationSubnet": {
+            "Type": "AWS::EC2::Subnet::Id",
+            "Description": "Id of Subnet for deployment"
+        },
+        "ElbSubnets": {
+            "Type": "List<AWS::EC2::Subnet::Id>",
+            "Description": "List of public subnets from which the load balancer will accept traffic"
+        },
+        "Vpc": {
+            "Type": "AWS::EC2::VPC::Id",
+            "Description": "Id of VPC for deployment"
+        }
+    },
+    "Resources": {
+        "KeycloakS3": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": "https://oreskos-templates.s3.amazonaws.com/keycloak-s3.json",
+                "Parameters": {
+                    "Application": {
+                        "Ref": "ApplicationName"
+                    },
+                    "Project": {
+                        "Ref": "Project"
+                    }
+                }
+            }
+        },
+        "KeycloakSgs": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": "https://oreskos-templates.s3.amazonaws.com/keycloak-sgs.json",
+                "Parameters": {
+                    "Application": {
+                        "Ref": "ApplicationName"
+                    },
+                    "Project": {
+                        "Ref": "Project"
+                    },
+                    "Vpc": {
+                        "Ref": "Vpc"
+                    }
+                }
+            }
+        },
+        "KeycloakEc2": {
+            "Type": "AWS::CloudFormation::Stack",
+            "DependsOn": "KeycloakSgs",
+            "Properties": {
+                "TemplateURL": "https://oreskos-templates.s3.amazonaws.com/keycloak-ec2.json",
+                "Parameters": {
+                    "Application": {
+                        "Ref": "ApplicationName"
+                    },
+                    "InstanceType": {
+                        "Ref": "ApplicationInstanceType"
+                    },
+                    "Key": {
+                        "Ref": "ApplicationKey"
+                    },
+                    "Project": {
+                        "Ref": "Project"
+                    },
+                    "SecurityGroups": {
+                        "Fn::GetAtt": [
+                            "KeycloakSgs",
+                            "Outputs.ApplicationSg"
+                        ]
+                    },
+                    "Subnet": {
+                        "Ref": "ApplicationSubnet"
+                    }
+                }
+            }
+        },
+        "KeycloakElb": {
+            "Type": "AWS::CloudFormation::Stack",
+            "DependsOn": [
+                "KeycloakS3",
+                "KeycloakSgs",
+                "KeycloakEc2"
+            ],
+            "Properties": {
+                "TemplateURL": "https://oreskos-templates.s3.amazonaws.com/keycloak-elb.json",
+                "Parameters": {
+                    "Application": {
+                        "Ref": "ApplicationName"
+                    },
+                    "ApplicationServers": {
+                        "Fn::GetAtt": [
+                            "KeycloakEc2",
+                            "Outputs.ApplicationServer"
+                        ]
+                    },
+                    "Project": {
+                        "Ref": "Project"
+                    },
+                    "SecurityGroup": {
+                        "Fn::GetAtt": [
+                            "KeycloakSgs",
+                            "Outputs.ElbSg"
+                        ]
+                    },
+                    "Subnets": {
+                        "Fn::Join": [
+                            ",",
+                            {
+                                "Ref": "ElbSubnets"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}

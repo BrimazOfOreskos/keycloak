@@ -36,6 +36,18 @@
     "Resources": {
         "ApplicationServer": {
             "Type": "AWS::EC2::Instance",
+            "Metadata": {
+                "AWS::CloudFormation::Init": {
+                    "config" : {
+                        "users" : {
+                            "keycloak": {}
+                        },
+                        "sources" : {
+                            "/opt/keycloak": "https://github.com/keycloak/keycloak/releases/download/19.0.2/keycloak-19.0.2.tar.gz"
+                        }
+                    }
+                }
+            },
             "Properties": {
                 "BlockDeviceMappings": [
                     {
@@ -76,6 +88,13 @@
                         }
                     }
                 ]
+            }
+        }
+    },
+    "Outputs": {
+        "ApplicationServer": {
+            "Value": {
+                "Ref": "ApplicationServer"
             }
         }
     }

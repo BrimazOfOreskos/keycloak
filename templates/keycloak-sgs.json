@@ -134,5 +134,17 @@
                 "ToPort": 8080
             }
         }
+    },
+    "Outputs": {
+        "ApplicationSg": {
+            "Value": {
+                "Ref": "ApplicationServerSg"
+            }
+        },
+        "ElbSg": {
+            "Value": {
+                "Ref": "ElbSg"
+            }
+        }
     }
 }
