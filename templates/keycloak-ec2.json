@@ -1,0 +1,82 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters": {
+        "Application": {
+            "Type": "String",
+            "AllowedValues": [
+                "keycloak"
+            ],
+            "Default": "keycloak"
+        },
+        "InstanceType": {
+            "Type": "String",
+            "AllowedValues": [
+                "m5.large"
+            ],
+            "Default": "m5.large"
+        },
+        "Key": {
+            "Type": "AWS::EC2::KeyPair::KeyName"
+        },
+        "Project": {
+            "Type": "String",
+            "AllowedValues": [
+                "oreskos"
+            ],
+            "Default": "oreskos"
+        },
+        "SecurityGroups": {
+            "Type": "List<AWS::EC2::SecurityGroup::Id>"
+        },
+        "Subnet": {
+            "Type": "AWS::EC2::Subnet::Id",
+            "Description": "Id of Subnet for deployment"
+        }
+    },
+    "Resources": {
+        "ApplicationServer": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "BlockDeviceMappings": [
+                    {
+                        "DeviceName": "/dev/sda1",
+                        "Ebs": {
+                            "DeleteOnTermination": true,
+                            "Encrypted": true,
+                            "VolumeSize": "100",
+                            "VolumeType": "gp2"
+                        }
+                    }
+                ],
+                "ImageId": "ami-026b57f3c383c2eec",
+                "InstanceType": {
+                    "Ref": "InstanceType"
+                },
+                "KeyName": {
+                    "Ref": "Key"
+                },
+                "PropagateTagsToVolumeOnCreation": true,
+                "SecurityGroupIds": {
+                    "Ref": "SecurityGroups"
+                },
+                "SubnetId": {
+                    "Ref": "Subnet"
+                },
+                "Tags": [
+                    {
+                        "Key": "Project",
+                        "Value": {
+                            "Ref": "Project"
+                        }
+                    },
+                    {
+                        "Key": "Application",
+                        "Value": {
+                            "Ref": "Application"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}
